@@ -19,25 +19,34 @@ namespace EnvironmentalSurvey.DTOs
         public int SurveyId { get; set; }
 
         [Required]
+        [StringLength(1000)]
         public string QuestionText { get; set; } = string.Empty;
 
         [Required]
-        [RegularExpression("^(single_choice|multiple_choice|text)$")]
+        [RegularExpression("^(text|textarea|multiple_choice|checkbox)$",
+            ErrorMessage = "QuestionType must be one of: text, textarea, multiple_choice, checkbox")]
         public string QuestionType { get; set; } = string.Empty;
 
         public bool IsRequired { get; set; } = true;
 
         [Required]
+        [Range(1, int.MaxValue)]
         public int OrderNumber { get; set; }
 
-        public List<CreateQuestionOptionDto> Options { get; set; } = new();
+        public List<CreateQuestionOptionDto>? Options { get; set; }
     }
 
     public class UpdateQuestionDto
     {
+        [StringLength(1000)]
         public string? QuestionText { get; set; }
+
+        [RegularExpression("^(text|textarea|multiple_choice|checkbox)$")]
         public string? QuestionType { get; set; }
+
         public bool? IsRequired { get; set; }
+
+        [Range(1, int.MaxValue)]
         public int? OrderNumber { get; set; }
     }
 
@@ -57,6 +66,7 @@ namespace EnvironmentalSurvey.DTOs
         public string OptionText { get; set; } = string.Empty;
 
         [Required]
+        [Range(1, int.MaxValue)]
         public int OrderNumber { get; set; }
 
         public bool IsCorrect { get; set; } = false;

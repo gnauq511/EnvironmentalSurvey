@@ -341,7 +341,30 @@ namespace EnvironmentalSurvey.Controllers
                 return StatusCode(500, "Internal server error");
             }
         }
+        [HttpPut("{id}/activate")]
+        [Authorize(Roles = "admin")]
+        public async Task<ActionResult> ActivateUser(int id)
+        {
+            try
+            {
+                var user = await _context.Users.FindAsync(id);
+                if (user == null)
+                {
+                    return NotFound(new { message = "User not found" });
+                }
 
+                user.IsActive = true;
+                user.UpdatedAt = DateTime.Now;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { message = "User activated successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating user");
+                return StatusCode(500, "Internal server error");
+            }
+        }
         // GET: api/users/{id}/statistics
         [HttpGet("{id}/statistics")]
         [Authorize]

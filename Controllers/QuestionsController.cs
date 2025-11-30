@@ -21,6 +21,12 @@ namespace EnvironmentalSurvey.Controllers
             _logger = logger;
         }
 
+        // Helper method to check if question type needs options
+        private bool QuestionTypeNeedsOptions(string questionType)
+        {
+            return questionType == "multiple_choice" || questionType == "checkbox";
+        }
+
         // GET: api/questions/survey/{surveyId}
         [HttpGet("survey/{surveyId}")]
         [Authorize]
@@ -129,12 +135,14 @@ namespace EnvironmentalSurvey.Controllers
         {
             try
             {
+                // Validate survey exists
                 var survey = await _context.Surveys.FindAsync(createDto.SurveyId);
                 if (survey == null)
                 {
                     return NotFound(new { message = "Survey not found" });
                 }
 
+                // Check permissions
                 var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
                 var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
@@ -143,6 +151,16 @@ namespace EnvironmentalSurvey.Controllers
                     return Forbid();
                 }
 
+                // Validate that multiple_choice and checkbox have options
+                if (QuestionTypeNeedsOptions(createDto.QuestionType))
+                {
+                    if (createDto.Options == null || !createDto.Options.Any())
+                    {
+                        return BadRequest(new { message = $"Question type '{createDto.QuestionType}' requires at least one option" });
+                    }
+                }
+
+                // Create question
                 var question = new Question
                 {
                     SurveyId = createDto.SurveyId,
@@ -155,6 +173,8 @@ namespace EnvironmentalSurvey.Controllers
 
                 _context.Questions.Add(question);
                 await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Created question {question.QuestionId} with type {question.QuestionType}");
 
                 // Add options if provided
                 var optionDtos = new List<QuestionOptionDto>();
@@ -173,8 +193,11 @@ namespace EnvironmentalSurvey.Controllers
                     }
                     await _context.SaveChangesAsync();
 
+                    _logger.LogInformation($"Added {createDto.Options.Count} options to question {question.QuestionId}");
+
                     optionDtos = await _context.QuestionOptions
                         .Where(o => o.QuestionId == question.QuestionId)
+                        .OrderBy(o => o.OrderNumber)
                         .Select(o => new QuestionOptionDto
                         {
                             OptionId = o.OptionId,
@@ -201,8 +224,8 @@ namespace EnvironmentalSurvey.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating question");
-                return StatusCode(500, "Internal server error");
+                _logger.LogError(ex, "Error creating question: {Message}", ex.Message);
+                return StatusCode(500, new { message = "Internal server error", detail = ex.Message });
             }
         }
 
@@ -244,6 +267,7 @@ namespace EnvironmentalSurvey.Controllers
 
                 var options = await _context.QuestionOptions
                     .Where(o => o.QuestionId == id)
+                    .OrderBy(o => o.OrderNumber)
                     .Select(o => new QuestionOptionDto
                     {
                         OptionId = o.OptionId,
@@ -319,6 +343,12 @@ namespace EnvironmentalSurvey.Controllers
                 if (question == null)
                 {
                     return NotFound(new { message = "Question not found" });
+                }
+
+                // Check if question type supports options
+                if (!QuestionTypeNeedsOptions(question.QuestionType))
+                {
+                    return BadRequest(new { message = $"Question type '{question.QuestionType}' does not support options" });
                 }
 
                 var survey = await _context.Surveys.FindAsync(question.SurveyId);

@@ -13,6 +13,8 @@ namespace EnvironmentalSurvey.Services
         Task<bool> RejectRegistrationAsync(int id);
         Task<bool> DeleteUserAsync(int id);
         Task<bool> DeactivateUserAsync(int id);
+        Task<bool> ActivateUserAsync(int id);
+
         Task<UserStatisticsDto?> GetUserStatisticsAsync(int id);
         Task<IEnumerable<UserDto>> GetPendingRegistrationsAsync();
         Task<bool> ChangePasswordAsync(int id, ChangePasswordDto changePasswordDto);

@@ -135,6 +135,23 @@ namespace EnvironmentalSurvey.Controllers
                     }
                 }
 
+                // Tính toán status dựa trên ngày
+                var now = DateTime.Now;
+                string status;
+
+                if (createDto.StartDate > now)
+                {
+                    status = "upcoming"; // Chưa bắt đầu
+                }
+                else if (createDto.EndDate < now)
+                {
+                    status = "completed"; // Đã kết thúc
+                }
+                else
+                {
+                    status = "ongoing"; // Đang diễn ra
+                }
+
                 var competition = new Competition
                 {
                     Title = createDto.Title,
@@ -143,7 +160,7 @@ namespace EnvironmentalSurvey.Controllers
                     StartDate = createDto.StartDate,
                     EndDate = createDto.EndDate,
                     PrizeDescription = createDto.PrizeDescription,
-                    Status = "upcoming",
+                    Status = status, // Sử dụng status đã tính toán
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 };
@@ -222,6 +239,24 @@ namespace EnvironmentalSurvey.Controllers
                 if (!string.IsNullOrEmpty(updateDto.Status))
                     competition.Status = updateDto.Status;
 
+
+                var now = DateTime.Now;
+                string status;
+
+                if (updateDto.StartDate > now)
+                {
+                    status = "upcoming";
+                }
+                else if (updateDto.EndDate < now)
+                {
+                    status = "completed";
+                }
+                else
+                {
+                    status = "ongoing";
+                }
+
+                competition.Status = status;
                 competition.UpdatedAt = DateTime.Now;
                 await _context.SaveChangesAsync();
 
@@ -258,26 +293,22 @@ namespace EnvironmentalSurvey.Controllers
         // DELETE: api/competitions/{id}
         [HttpDelete("{id}")]
         [Authorize(Roles = "admin")]
-        public async Task<ActionResult> DeleteCompetition(int id)
+        public async Task<IActionResult> DeleteCompetition(int id)
         {
-            try
-            {
-                var competition = await _context.Competitions.FindAsync(id);
-                if (competition == null)
-                {
-                    return NotFound(new { message = "Competition not found" });
-                }
+            var competition = await _context.Competitions.FindAsync(id);
+            if (competition == null) return NotFound();
 
-                _context.Competitions.Remove(competition);
-                await _context.SaveChangesAsync();
+            // Xóa tất cả competition_winners liên quan trước
+            var winners = await _context.CompetitionWinners
+                .Where(w => w.CompetitionId == id)
+                .ToListAsync();
+            _context.CompetitionWinners.RemoveRange(winners);
 
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting competition");
-                return StatusCode(500, "Internal server error");
-            }
+            // Sau đó mới xóa competition
+            _context.Competitions.Remove(competition);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
         }
 
         // GET: api/competitions/active

@@ -8,7 +8,7 @@ namespace EnvironmentalSurvey.DTOs
         public int UserId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
-        public string? Type { get; set; }
+        public string Type { get; set; } = string.Empty;
         public bool IsRead { get; set; }
         public DateTime CreatedAt { get; set; }
     }
@@ -23,11 +23,12 @@ namespace EnvironmentalSurvey.DTOs
         public string Title { get; set; } = string.Empty;
 
         [Required]
+        [StringLength(1000)]
         public string Message { get; set; } = string.Empty;
 
-        [StringLength(20)]
-        [RegularExpression("^(survey|competition|result|general)$")]
-        public string? Type { get; set; }
+        [Required]
+        [RegularExpression("^(info|warning|success|error)$")]
+        public string Type { get; set; } = "info";
     }
 
     public class BroadcastNotificationDto
@@ -37,14 +38,15 @@ namespace EnvironmentalSurvey.DTOs
         public string Title { get; set; } = string.Empty;
 
         [Required]
+        [StringLength(1000)]
         public string Message { get; set; } = string.Empty;
 
-        [StringLength(20)]
-        [RegularExpression("^(survey|competition|result|general)$")]
-        public string? Type { get; set; }
+        [Required]
+        [RegularExpression("^(info|warning|success|error)$")]
+        public string Type { get; set; } = "info";
 
-        [StringLength(20)]
-        [RegularExpression("^(admin|faculty|staff|student)$")]
+        // Optional - if null, send to all users
+        [RegularExpression("^(student|faculty|admin)?$")]
         public string? TargetRole { get; set; }
     }
 }

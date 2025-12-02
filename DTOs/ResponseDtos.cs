@@ -37,14 +37,4 @@ namespace EnvironmentalSurvey.DTOs
         public string? TextAnswer { get; set; }
     }
 
-    public class AnswerDto
-    {
-        public int AnswerId { get; set; }
-        public int ResponseId { get; set; }
-        public int QuestionId { get; set; }
-        public string QuestionText { get; set; } = string.Empty;
-        public int? OptionId { get; set; }
-        public QuestionOptionDto? SelectedOption { get; set; }
-        public string? TextAnswer { get; set; }
-    }
 }
